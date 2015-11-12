@@ -54,8 +54,9 @@ NAN_METHOD(quark) {
 
     quark_hash(input, output, input_len);
 
+    v8::Local<v8::Value> returnValue = Nan::CopyBuffer(output, 32).ToLocalChecked();
     info.GetReturnValue().Set(
-        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
+        returnValue
     );
 }
 
@@ -76,8 +77,9 @@ NAN_METHOD(x11) {
 
     x11_hash(input, output, input_len);
 
+    v8::Local<v8::Value> returnValue = Nan::CopyBuffer(output, 32).ToLocalChecked();
     info.GetReturnValue().Set(
-        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
+        returnValue
     );
 }
 
@@ -103,8 +105,9 @@ NAN_METHOD(scrypt) {
    
    scrypt_N_R_1_256(input, output, nValue, rValue, input_len);
 
+    v8::Local<v8::Value> returnValue = Nan::CopyBuffer(output, 32).ToLocalChecked();
     info.GetReturnValue().Set(
-        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
+        returnValue
     );
 }
 
@@ -134,8 +137,9 @@ NAN_METHOD(scryptn) {
    scrypt_N_R_1_256(input, output, N, 1, input_len); //hardcode for now to R=1 for now
 
 
+    v8::Local<v8::Value> returnValue = Nan::CopyBuffer(output, 32).ToLocalChecked();
     info.GetReturnValue().Set(
-        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
+        returnValue
     );
 }
 
@@ -168,8 +172,9 @@ NAN_METHOD(scryptjane) {
 
     scryptjane_hash(input, input_len, (uint32_t *)output, GetNfactorJane(timestamp, nChainStartTime, nMin, nMax));
 
+    v8::Local<v8::Value> returnValue = Nan::CopyBuffer(output, 32).ToLocalChecked();
     info.GetReturnValue().Set(
-        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
+        returnValue
     );
 }
 
@@ -190,8 +195,9 @@ NAN_METHOD(keccak) {
 
     keccak_hash(input, output, dSize);
 
+    v8::Local<v8::Value> returnValue = Nan::CopyBuffer(output, 32).ToLocalChecked();
     info.GetReturnValue().Set(
-        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
+        returnValue
     );
 }
 
@@ -211,8 +217,9 @@ NAN_METHOD(bcrypt) {
 
     bcrypt_hash(input, output);
 
+    v8::Local<v8::Value> returnValue = Nan::CopyBuffer(output, 32).ToLocalChecked();
     info.GetReturnValue().Set(
-        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
+        returnValue
     );
 }
 
@@ -233,8 +240,9 @@ NAN_METHOD(skein) {
     
     skein_hash(input, output, input_len);
 
+    v8::Local<v8::Value> returnValue = Nan::CopyBuffer(output, 32).ToLocalChecked();
     info.GetReturnValue().Set(
-        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
+        returnValue
     );
 }
 
@@ -256,8 +264,9 @@ NAN_METHOD(groestl) {
 
     groestl_hash(input, output, input_len);
 
+    v8::Local<v8::Value> returnValue = Nan::CopyBuffer(output, 32).ToLocalChecked();
     info.GetReturnValue().Set(
-        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
+        returnValue
     );
 }
 
@@ -279,8 +288,9 @@ NAN_METHOD(groestlmyriad) {
 
     groestlmyriad_hash(input, output, input_len);
 
+    v8::Local<v8::Value> returnValue = Nan::CopyBuffer(output, 32).ToLocalChecked();
     info.GetReturnValue().Set(
-        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
+        returnValue
     );
 }
 
@@ -302,8 +312,9 @@ NAN_METHOD(blake) {
 
     blake_hash(input, output, input_len);
 
+    v8::Local<v8::Value> returnValue = Nan::CopyBuffer(output, 32).ToLocalChecked();
     info.GetReturnValue().Set(
-        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
+        returnValue
     );
 }
 
@@ -325,8 +336,9 @@ NAN_METHOD(fugue) {
 
     fugue_hash(input, output, input_len);
 
+    v8::Local<v8::Value> returnValue = Nan::CopyBuffer(output, 32).ToLocalChecked();
     info.GetReturnValue().Set(
-        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
+        returnValue
     );
 }
 
@@ -348,8 +360,9 @@ NAN_METHOD(qubit) {
 
     qubit_hash(input, output, input_len);
 
+    v8::Local<v8::Value> returnValue = Nan::CopyBuffer(output, 32).ToLocalChecked();
     info.GetReturnValue().Set(
-        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
+        returnValue
     );
 }
 
@@ -371,8 +384,9 @@ NAN_METHOD(hefty1) {
 
     hefty1_hash(input, output, input_len);
 
+    v8::Local<v8::Value> returnValue = Nan::CopyBuffer(output, 32).ToLocalChecked();
     info.GetReturnValue().Set(
-        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
+        returnValue
     );
 }
 
@@ -394,8 +408,9 @@ NAN_METHOD(shavite3) {
 
     shavite3_hash(input, output, input_len);
 
+    v8::Local<v8::Value> returnValue = Nan::CopyBuffer(output, 32).ToLocalChecked();
     info.GetReturnValue().Set(
-        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
+        returnValue
     );
 }
 
@@ -427,8 +442,9 @@ NAN_METHOD(cryptonight) {
     else
         cryptonight_hash(input, output, input_len);
 
+    v8::Local<v8::Value> returnValue = Nan::CopyBuffer(output, 32).ToLocalChecked();
     info.GetReturnValue().Set(
-        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
+        returnValue
     );
 }
 
@@ -449,8 +465,9 @@ NAN_METHOD(x13) {
 
     x13_hash(input, output, input_len);
 
+    v8::Local<v8::Value> returnValue = Nan::CopyBuffer(output, 32).ToLocalChecked();
     info.GetReturnValue().Set(
-        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
+        returnValue
     );
 }
 
@@ -483,10 +500,11 @@ NAN_METHOD(boolberry) {
     uint64_t spad_len = Buffer::Length(target_spad);
 
     boolberry_hash(input, input_len, scratchpad, spad_len, output, height);
-
+    v8::Local<v8::Value> returnValue = Nan::CopyBuffer(output, 32).ToLocalChecked();
     info.GetReturnValue().Set(
-        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
+        returnValue
     );
+
 }
 
 NAN_METHOD(nist5) {
@@ -506,8 +524,9 @@ NAN_METHOD(nist5) {
 
     nist5_hash(input, output, input_len);
 
+    v8::Local<v8::Value> returnValue = Nan::CopyBuffer(output, 32).ToLocalChecked();
     info.GetReturnValue().Set(
-        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
+        returnValue
     );
 }
 
@@ -528,8 +547,9 @@ NAN_METHOD(sha1) {
 
     sha1_hash(input, output, input_len);
 
+    v8::Local<v8::Value> returnValue = Nan::CopyBuffer(output, 32).ToLocalChecked();
     info.GetReturnValue().Set(
-        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
+        returnValue
     );
 }
 
@@ -550,8 +570,9 @@ NAN_METHOD(x15) {
 
     x15_hash(input, output, input_len);
 
+    v8::Local<v8::Value> returnValue = Nan::CopyBuffer(output, 32).ToLocalChecked();
     info.GetReturnValue().Set(
-        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
+        returnValue
     );
 }
 
@@ -572,8 +593,9 @@ NAN_METHOD(fresh) {
 
     fresh_hash(input, output, input_len);
 
+    v8::Local<v8::Value> returnValue = Nan::CopyBuffer(output, 32).ToLocalChecked();
     info.GetReturnValue().Set(
-        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
+        returnValue
     );
 }
 
