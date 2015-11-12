@@ -28,19 +28,21 @@ extern "C" {
 
 #include "boolberry.h"
 
-#define THROW_ERROR_EXCEPTION(x) NanThrowError(x)
-#define THROW_ERROR_EXCEPTION_WITH_STATUS_CODE(x, y) NanThrowError(x, y)
+#define THROW_ERROR_EXCEPTION(x) Nan::ThrowError(x)
+
+void callback(char* data, void* hint) {
+  free(data);
+}
 
 using namespace node;
 using namespace v8;
 
 NAN_METHOD(quark) {
-    NanScope();
 
-    if (args.Length() < 1)
+    if (info.Length() < 1)
         return THROW_ERROR_EXCEPTION("You must provide one argument.");
 
-    Local<Object> target = args[0]->ToObject();
+    Local<Object> target = info[0]->ToObject();
 
     if(!Buffer::HasInstance(target))
         return THROW_ERROR_EXCEPTION("Argument should be a buffer object.");
@@ -52,18 +54,17 @@ NAN_METHOD(quark) {
 
     quark_hash(input, output, input_len);
 
-    NanReturnValue(
-        NanNewBufferHandle(output, 32)
+    info.GetReturnValue().Set(
+        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
     );
 }
 
 NAN_METHOD(x11) {
-    NanScope();
 
-    if (args.Length() < 1)
+    if (info.Length() < 1)
         return THROW_ERROR_EXCEPTION("You must provide one argument.");
 
-    Local<Object> target = args[0]->ToObject();
+    Local<Object> target = info[0]->ToObject();
 
     if(!Buffer::HasInstance(target))
         return THROW_ERROR_EXCEPTION("Argument should be a buffer object.");
@@ -75,25 +76,24 @@ NAN_METHOD(x11) {
 
     x11_hash(input, output, input_len);
 
-    NanReturnValue(
-        NanNewBufferHandle(output, 32)
+    info.GetReturnValue().Set(
+        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
     );
 }
 
 NAN_METHOD(scrypt) {
-   NanScope();
 
-   if (args.Length() < 3)
+   if (info.Length() < 3)
        return THROW_ERROR_EXCEPTION("You must provide buffer to hash, N value, and R value");
 
-   Local<Object> target = args[0]->ToObject();
+   Local<Object> target = info[0]->ToObject();
 
    if(!Buffer::HasInstance(target))
        return THROW_ERROR_EXCEPTION("Argument should be a buffer object.");
     
-   Local<Number> numn = args[1]->ToNumber();
+   Local<Number> numn = info[1]->ToNumber();
    unsigned int nValue = numn->Value();
-   Local<Number> numr = args[2]->ToNumber();
+   Local<Number> numr = info[2]->ToNumber();
    unsigned int rValue = numr->Value();
    
    char * input = Buffer::Data(target);
@@ -103,25 +103,24 @@ NAN_METHOD(scrypt) {
    
    scrypt_N_R_1_256(input, output, nValue, rValue, input_len);
 
-   NanReturnValue(
-       NanNewBufferHandle(output, 32)
+    info.GetReturnValue().Set(
+        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
     );
 }
 
 
 
 NAN_METHOD(scryptn) {
-   NanScope();
 
-   if (args.Length() < 2)
+   if (info.Length() < 2)
        return THROW_ERROR_EXCEPTION("You must provide buffer to hash and N factor.");
 
-   Local<Object> target = args[0]->ToObject();
+   Local<Object> target = info[0]->ToObject();
 
    if(!Buffer::HasInstance(target))
        return THROW_ERROR_EXCEPTION("Argument should be a buffer object.");
 
-   Local<Number> num = args[1]->ToNumber();
+   Local<Number> num = info[1]->ToNumber();
    unsigned int nFactor = num->Value();
 
    char * input = Buffer::Data(target);
@@ -135,32 +134,31 @@ NAN_METHOD(scryptn) {
    scrypt_N_R_1_256(input, output, N, 1, input_len); //hardcode for now to R=1 for now
 
 
-   NanReturnValue(
-       NanNewBufferHandle(output, 32)
+    info.GetReturnValue().Set(
+        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
     );
 }
 
 NAN_METHOD(scryptjane) {
-    NanScope();
 
-    if (args.Length() < 5)
+    if (info.Length() < 5)
         return THROW_ERROR_EXCEPTION("You must provide two argument: buffer, timestamp as number, and nChainStarTime as number, nMin, and nMax");
 
-    Local<Object> target = args[0]->ToObject();
+    Local<Object> target = info[0]->ToObject();
 
     if(!Buffer::HasInstance(target))
         return THROW_ERROR_EXCEPTION("First should be a buffer object.");
 
-    Local<Number> num = args[1]->ToNumber();
+    Local<Number> num = info[1]->ToNumber();
     int timestamp = num->Value();
 
-    Local<Number> num2 = args[2]->ToNumber();
+    Local<Number> num2 = info[2]->ToNumber();
     int nChainStartTime = num2->Value();
 
-    Local<Number> num3 = args[3]->ToNumber();
+    Local<Number> num3 = info[3]->ToNumber();
     int nMin = num3->Value();
 
-    Local<Number> num4 = args[4]->ToNumber();
+    Local<Number> num4 = info[4]->ToNumber();
     int nMax = num4->Value();
 
     char * input = Buffer::Data(target);
@@ -170,18 +168,17 @@ NAN_METHOD(scryptjane) {
 
     scryptjane_hash(input, input_len, (uint32_t *)output, GetNfactorJane(timestamp, nChainStartTime, nMin, nMax));
 
-    NanReturnValue(
-        NanNewBufferHandle(output, 32)
+    info.GetReturnValue().Set(
+        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
     );
 }
 
 NAN_METHOD(keccak) {
-    NanScope();
 
-    if (args.Length() < 1)
+    if (info.Length() < 1)
         return THROW_ERROR_EXCEPTION("You must provide one argument.");
 
-    Local<Object> target = args[0]->ToObject();
+    Local<Object> target = info[0]->ToObject();
 
     if(!Buffer::HasInstance(target))
         return THROW_ERROR_EXCEPTION("Argument should be a buffer object.");
@@ -193,19 +190,18 @@ NAN_METHOD(keccak) {
 
     keccak_hash(input, output, dSize);
 
-    NanReturnValue(
-        NanNewBufferHandle(output, 32)
+    info.GetReturnValue().Set(
+        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
     );
 }
 
 
 NAN_METHOD(bcrypt) {
-    NanScope();
 
-    if (args.Length() < 1)
+    if (info.Length() < 1)
         return THROW_ERROR_EXCEPTION("You must provide one argument.");
 
-    Local<Object> target = args[0]->ToObject();
+    Local<Object> target = info[0]->ToObject();
 
     if(!Buffer::HasInstance(target))
         return THROW_ERROR_EXCEPTION("Argument should be a buffer object.");
@@ -215,18 +211,17 @@ NAN_METHOD(bcrypt) {
 
     bcrypt_hash(input, output);
 
-    NanReturnValue(
-        NanNewBufferHandle(output, 32)
+    info.GetReturnValue().Set(
+        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
     );
 }
 
 NAN_METHOD(skein) {
-    NanScope();
 
-    if (args.Length() < 1)
+    if (info.Length() < 1)
         return THROW_ERROR_EXCEPTION("You must provide one argument.");
 
-    Local<Object> target = args[0]->ToObject();
+    Local<Object> target = info[0]->ToObject();
 
     if(!Buffer::HasInstance(target))
         return THROW_ERROR_EXCEPTION("Argument should be a buffer object.");
@@ -238,19 +233,18 @@ NAN_METHOD(skein) {
     
     skein_hash(input, output, input_len);
 
-    NanReturnValue(
-        NanNewBufferHandle(output, 32)
+    info.GetReturnValue().Set(
+        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
     );
 }
 
 
 NAN_METHOD(groestl) {
-    NanScope();
 
-    if (args.Length() < 1)
+    if (info.Length() < 1)
         return THROW_ERROR_EXCEPTION("You must provide one argument.");
 
-    Local<Object> target = args[0]->ToObject();
+    Local<Object> target = info[0]->ToObject();
 
     if(!Buffer::HasInstance(target))
         return THROW_ERROR_EXCEPTION("Argument should be a buffer object.");
@@ -262,19 +256,18 @@ NAN_METHOD(groestl) {
 
     groestl_hash(input, output, input_len);
 
-    NanReturnValue(
-        NanNewBufferHandle(output, 32)
+    info.GetReturnValue().Set(
+        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
     );
 }
 
 
 NAN_METHOD(groestlmyriad) {
-    NanScope();
 
-    if (args.Length() < 1)
+    if (info.Length() < 1)
         return THROW_ERROR_EXCEPTION("You must provide one argument.");
 
-    Local<Object> target = args[0]->ToObject();
+    Local<Object> target = info[0]->ToObject();
 
     if(!Buffer::HasInstance(target))
         return THROW_ERROR_EXCEPTION("Argument should be a buffer object.");
@@ -286,19 +279,18 @@ NAN_METHOD(groestlmyriad) {
 
     groestlmyriad_hash(input, output, input_len);
 
-    NanReturnValue(
-        NanNewBufferHandle(output, 32)
+    info.GetReturnValue().Set(
+        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
     );
 }
 
 
 NAN_METHOD(blake) {
-    NanScope();
 
-    if (args.Length() < 1)
+    if (info.Length() < 1)
         return THROW_ERROR_EXCEPTION("You must provide one argument.");
 
-    Local<Object> target = args[0]->ToObject();
+    Local<Object> target = info[0]->ToObject();
 
     if(!Buffer::HasInstance(target))
         return THROW_ERROR_EXCEPTION("Argument should be a buffer object.");
@@ -310,19 +302,18 @@ NAN_METHOD(blake) {
 
     blake_hash(input, output, input_len);
 
-    NanReturnValue(
-        NanNewBufferHandle(output, 32)
+    info.GetReturnValue().Set(
+        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
     );
 }
 
 
 NAN_METHOD(fugue) {
-    NanScope();
 
-    if (args.Length() < 1)
+    if (info.Length() < 1)
         return THROW_ERROR_EXCEPTION("You must provide one argument.");
 
-    Local<Object> target = args[0]->ToObject();
+    Local<Object> target = info[0]->ToObject();
 
     if(!Buffer::HasInstance(target))
         return THROW_ERROR_EXCEPTION("Argument should be a buffer object.");
@@ -334,19 +325,18 @@ NAN_METHOD(fugue) {
 
     fugue_hash(input, output, input_len);
 
-    NanReturnValue(
-        NanNewBufferHandle(output, 32)
+    info.GetReturnValue().Set(
+        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
     );
 }
 
 
 NAN_METHOD(qubit) {
-    NanScope();
 
-    if (args.Length() < 1)
+    if (info.Length() < 1)
         return THROW_ERROR_EXCEPTION("You must provide one argument.");
 
-    Local<Object> target = args[0]->ToObject();
+    Local<Object> target = info[0]->ToObject();
 
     if(!Buffer::HasInstance(target))
         return THROW_ERROR_EXCEPTION("Argument should be a buffer object.");
@@ -358,19 +348,18 @@ NAN_METHOD(qubit) {
 
     qubit_hash(input, output, input_len);
 
-    NanReturnValue(
-        NanNewBufferHandle(output, 32)
+    info.GetReturnValue().Set(
+        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
     );
 }
 
 
 NAN_METHOD(hefty1) {
-    NanScope();
 
-    if (args.Length() < 1)
+    if (info.Length() < 1)
         return THROW_ERROR_EXCEPTION("You must provide one argument.");
 
-    Local<Object> target = args[0]->ToObject();
+    Local<Object> target = info[0]->ToObject();
 
     if(!Buffer::HasInstance(target))
         return THROW_ERROR_EXCEPTION("Argument should be a buffer object.");
@@ -382,19 +371,18 @@ NAN_METHOD(hefty1) {
 
     hefty1_hash(input, output, input_len);
 
-    NanReturnValue(
-        NanNewBufferHandle(output, 32)
+    info.GetReturnValue().Set(
+        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
     );
 }
 
 
 NAN_METHOD(shavite3) {
-    NanScope();
 
-    if (args.Length() < 1)
+    if (info.Length() < 1)
         return THROW_ERROR_EXCEPTION("You must provide one argument.");
 
-    Local<Object> target = args[0]->ToObject();
+    Local<Object> target = info[0]->ToObject();
 
     if(!Buffer::HasInstance(target))
         return THROW_ERROR_EXCEPTION("Argument should be a buffer object.");
@@ -406,26 +394,25 @@ NAN_METHOD(shavite3) {
 
     shavite3_hash(input, output, input_len);
 
-    NanReturnValue(
-        NanNewBufferHandle(output, 32)
+    info.GetReturnValue().Set(
+        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
     );
 }
 
 NAN_METHOD(cryptonight) {
-    NanScope();
 
     bool fast = false;
 
-    if (args.Length() < 1)
+    if (info.Length() < 1)
         return THROW_ERROR_EXCEPTION("You must provide one argument.");
     
-    if (args.Length() >= 2) {
-        if(!args[1]->IsBoolean())
+    if (info.Length() >= 2) {
+        if(!info[1]->IsBoolean())
             return THROW_ERROR_EXCEPTION("Argument 2 should be a boolean");
-        fast = args[1]->ToBoolean()->BooleanValue();
+        fast = info[1]->ToBoolean()->BooleanValue();
     }
 
-    Local<Object> target = args[0]->ToObject();
+    Local<Object> target = info[0]->ToObject();
 
     if(!Buffer::HasInstance(target))
         return THROW_ERROR_EXCEPTION("Argument should be a buffer object.");
@@ -440,18 +427,17 @@ NAN_METHOD(cryptonight) {
     else
         cryptonight_hash(input, output, input_len);
 
-    NanReturnValue(
-        NanNewBufferHandle(output, 32)
+    info.GetReturnValue().Set(
+        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
     );
 }
 
 NAN_METHOD(x13) {
-    NanScope();
 
-    if (args.Length() < 1)
+    if (info.Length() < 1)
         return THROW_ERROR_EXCEPTION("You must provide one argument.");
 
-    Local<Object> target = args[0]->ToObject();
+    Local<Object> target = info[0]->ToObject();
 
     if(!Buffer::HasInstance(target))
         return THROW_ERROR_EXCEPTION("Argument should be a buffer object.");
@@ -463,19 +449,18 @@ NAN_METHOD(x13) {
 
     x13_hash(input, output, input_len);
 
-    NanReturnValue(
-        NanNewBufferHandle(output, 32)
+    info.GetReturnValue().Set(
+        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
     );
 }
 
 NAN_METHOD(boolberry) {
-    NanScope();
 
-    if (args.Length() < 2)
+    if (info.Length() < 2)
         return THROW_ERROR_EXCEPTION("You must provide two arguments.");
 
-    Local<Object> target = args[0]->ToObject();
-    Local<Object> target_spad = args[1]->ToObject();
+    Local<Object> target = info[0]->ToObject();
+    Local<Object> target_spad = info[1]->ToObject();
     uint32_t height = 1;
 
     if(!Buffer::HasInstance(target))
@@ -484,9 +469,9 @@ NAN_METHOD(boolberry) {
     if(!Buffer::HasInstance(target_spad))
         return THROW_ERROR_EXCEPTION("Argument 2 should be a buffer object.");
 
-    if(args.Length() >= 3)
-        if(args[2]->IsUint32())
-            height = args[2]->ToUint32()->Uint32Value();
+    if(info.Length() >= 3)
+        if(info[2]->IsUint32())
+            height = info[2]->ToUint32()->Uint32Value();
         else
             return THROW_ERROR_EXCEPTION("Argument 3 should be an unsigned integer.");
 
@@ -499,18 +484,17 @@ NAN_METHOD(boolberry) {
 
     boolberry_hash(input, input_len, scratchpad, spad_len, output, height);
 
-    NanReturnValue(
-        NanNewBufferHandle(output, 32)
+    info.GetReturnValue().Set(
+        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
     );
 }
 
 NAN_METHOD(nist5) {
-    NanScope();
 
-    if (args.Length() < 1)
+    if (info.Length() < 1)
         return THROW_ERROR_EXCEPTION("You must provide one argument.");
 
-    Local<Object> target = args[0]->ToObject();
+    Local<Object> target = info[0]->ToObject();
 
     if(!Buffer::HasInstance(target))
         return THROW_ERROR_EXCEPTION("Argument should be a buffer object.");
@@ -522,18 +506,17 @@ NAN_METHOD(nist5) {
 
     nist5_hash(input, output, input_len);
 
-    NanReturnValue(
-        NanNewBufferHandle(output, 32)
+    info.GetReturnValue().Set(
+        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
     );
 }
 
 NAN_METHOD(sha1) {
-    NanScope();
 
-    if (args.Length() < 1)
+    if (info.Length() < 1)
         return THROW_ERROR_EXCEPTION("You must provide one argument.");
 
-    Local<Object> target = args[0]->ToObject();
+    Local<Object> target = info[0]->ToObject();
 
     if(!Buffer::HasInstance(target))
         return THROW_ERROR_EXCEPTION("Argument should be a buffer object.");
@@ -545,18 +528,17 @@ NAN_METHOD(sha1) {
 
     sha1_hash(input, output, input_len);
 
-    NanReturnValue(
-        NanNewBufferHandle(output, 32)
+    info.GetReturnValue().Set(
+        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
     );
 }
 
 NAN_METHOD(x15) {
-    NanScope();
 
-    if (args.Length() < 1)
+    if (info.Length() < 1)
         return THROW_ERROR_EXCEPTION("You must provide one argument.");
 
-    Local<Object> target = args[0]->ToObject();
+    Local<Object> target = info[0]->ToObject();
 
     if(!Buffer::HasInstance(target))
         return THROW_ERROR_EXCEPTION("Argument should be a buffer object.");
@@ -568,18 +550,17 @@ NAN_METHOD(x15) {
 
     x15_hash(input, output, input_len);
 
-    NanReturnValue(
-        NanNewBufferHandle(output, 32)
+    info.GetReturnValue().Set(
+        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
     );
 }
 
 NAN_METHOD(fresh) {
-    NanScope();
 
-    if (args.Length() < 1)
+    if (info.Length() < 1)
         return THROW_ERROR_EXCEPTION("You must provide one argument.");
 
-    Local<Object> target = args[0]->ToObject();
+    Local<Object> target = info[0]->ToObject();
 
     if(!Buffer::HasInstance(target))
         return THROW_ERROR_EXCEPTION("Argument should be a buffer object.");
@@ -591,34 +572,34 @@ NAN_METHOD(fresh) {
 
     fresh_hash(input, output, input_len);
 
-    NanReturnValue(
-        NanNewBufferHandle(output, 32)
+    info.GetReturnValue().Set(
+        Nan::NewBuffer(output, 32,callback,0).ToLocalChecked()
     );
 }
 
-void init(Handle<Object> exports) {
-    exports->Set(NanNew<String>("quark"), NanNew<FunctionTemplate>(quark)->GetFunction());
-    exports->Set(NanNew<String>("x11"), NanNew<FunctionTemplate>(x11)->GetFunction());
-    exports->Set(NanNew<String>("scrypt"), NanNew<FunctionTemplate>(scrypt)->GetFunction());
-    exports->Set(NanNew<String>("scryptn"), NanNew<FunctionTemplate>(scryptn)->GetFunction());
-    exports->Set(NanNew<String>("scryptjane"), NanNew<FunctionTemplate>(scryptjane)->GetFunction());
-    exports->Set(NanNew<String>("keccak"), NanNew<FunctionTemplate>(keccak)->GetFunction());
-    exports->Set(NanNew<String>("bcrypt"), NanNew<FunctionTemplate>(bcrypt)->GetFunction());
-    exports->Set(NanNew<String>("skein"), NanNew<FunctionTemplate>(skein)->GetFunction());
-    exports->Set(NanNew<String>("groestl"), NanNew<FunctionTemplate>(groestl)->GetFunction());
-    exports->Set(NanNew<String>("groestlmyriad"), NanNew<FunctionTemplate>(groestlmyriad)->GetFunction());
-    exports->Set(NanNew<String>("blake"), NanNew<FunctionTemplate>(blake)->GetFunction());
-    exports->Set(NanNew<String>("fugue"), NanNew<FunctionTemplate>(fugue)->GetFunction());
-    exports->Set(NanNew<String>("qubit"), NanNew<FunctionTemplate>(qubit)->GetFunction());
-    exports->Set(NanNew<String>("hefty1"), NanNew<FunctionTemplate>(hefty1)->GetFunction());
-    exports->Set(NanNew<String>("shavite3"), NanNew<FunctionTemplate>(shavite3)->GetFunction());
-    exports->Set(NanNew<String>("cryptonight"), NanNew<FunctionTemplate>(cryptonight)->GetFunction());
-    exports->Set(NanNew<String>("x13"), NanNew<FunctionTemplate>(x13)->GetFunction());
-    exports->Set(NanNew<String>("boolberry"), NanNew<FunctionTemplate>(boolberry)->GetFunction());
-    exports->Set(NanNew<String>("nist5"), NanNew<FunctionTemplate>(nist5)->GetFunction());
-    exports->Set(NanNew<String>("sha1"), NanNew<FunctionTemplate>(sha1)->GetFunction());
-    exports->Set(NanNew<String>("x15"), NanNew<FunctionTemplate>(x15)->GetFunction());
-    exports->Set(NanNew<String>("fresh"), NanNew<FunctionTemplate>(fresh)->GetFunction());
+NAN_MODULE_INIT(init) {
+    Nan::Set(target, Nan::New("quark").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(quark)).ToLocalChecked());
+    Nan::Set(target, Nan::New("x11").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(x11)).ToLocalChecked());
+    Nan::Set(target, Nan::New("scrypt").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(scrypt)).ToLocalChecked());
+    Nan::Set(target, Nan::New("scryptn").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(scryptn)).ToLocalChecked());
+    Nan::Set(target, Nan::New("scryptjane").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(scryptjane)).ToLocalChecked());
+    Nan::Set(target, Nan::New("keccak").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(keccak)).ToLocalChecked());
+    Nan::Set(target, Nan::New("bcrypt").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(bcrypt)).ToLocalChecked());
+    Nan::Set(target, Nan::New("skein").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(skein)).ToLocalChecked());
+    Nan::Set(target, Nan::New("groestl").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(groestl)).ToLocalChecked());
+    Nan::Set(target, Nan::New("groestlmyriad").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(groestlmyriad)).ToLocalChecked());
+    Nan::Set(target, Nan::New("blake").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(blake)).ToLocalChecked());
+    Nan::Set(target, Nan::New("fugue").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(fugue)).ToLocalChecked());
+    Nan::Set(target, Nan::New("qubit").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(qubit)).ToLocalChecked());
+    Nan::Set(target, Nan::New("hefty1").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(hefty1)).ToLocalChecked());
+    Nan::Set(target, Nan::New("shavite3").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(shavite3)).ToLocalChecked());
+    Nan::Set(target, Nan::New("cryptonight").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(cryptonight)).ToLocalChecked());
+    Nan::Set(target, Nan::New("x13").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(x13)).ToLocalChecked());
+    Nan::Set(target, Nan::New("boolberry").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(boolberry)).ToLocalChecked());
+    Nan::Set(target, Nan::New("nist5").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(nist5)).ToLocalChecked());
+    Nan::Set(target, Nan::New("sha1").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(sha1)).ToLocalChecked());
+    Nan::Set(target, Nan::New("x15").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(x15)).ToLocalChecked());
+    Nan::Set(target, Nan::New("fresh").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(fresh)).ToLocalChecked());
 }
 
 NODE_MODULE(multihashing, init)
