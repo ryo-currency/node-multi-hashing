@@ -1,4 +1,4 @@
-// Copyright (c) 2017, SUMOKOIN
+// Copyright (c) 2019, Ryo Currency Project
 //
 // All rights reserved.
 //
@@ -61,10 +61,6 @@ and fitness for purpose.
 ---------------------------------------------------------------------------
 */
 
-#if !defined(_LP64) && !defined(_WIN64)
-#define BUILD32
-#endif
-
 #define saes_data(w) {\
 	w(0x63), w(0x7c), w(0x77), w(0x7b), w(0xf2), w(0x6b), w(0x6f), w(0xc5),\
 	w(0x30), w(0x01), w(0x67), w(0x2b), w(0xfe), w(0xd7), w(0xab), w(0x76),\
@@ -114,7 +110,7 @@ and fitness for purpose.
 #define saes_u3(p)   saes_b2w(         p,          p, saes_f3(p), saes_f2(p))
 
 alignas(16) const uint32_t saes_table[4][256] = { saes_data(saes_u0), saes_data(saes_u1), saes_data(saes_u2), saes_data(saes_u3) };
-alignas(16) const uint8_t  saes_sbox[256] = saes_data(saes_h0);
+alignas(16) extern const uint8_t  saes_sbox[256] = saes_data(saes_h0);
 
 struct aesdata
 {
@@ -430,6 +426,39 @@ void cn_slow_hash<MEMORY,ITER,VERSION>::explode_scratchpad_soft()
 	}
 }
 
+inline void generate_512(uint64_t idx, const uint64_t* in, uint8_t* out)
+{
+	constexpr size_t hash_size = 200; // 25x8 bytes
+#if defined(__arm__) || defined(__aarch64__)
+	alignas(16) uint64_t hash[25];
+#else
+	alignas(128) uint64_t hash[25];
+#endif
+
+	memcpy(hash, in, hash_size);
+	hash[0] ^= idx;
+
+	keccakf(hash, 24);
+	memcpy(out, hash, 160);
+	out+=160;
+
+	keccakf(hash, 24);
+	memcpy(out, hash, 176);
+	out+=176;
+
+	keccakf(hash, 24);
+	memcpy(out, hash, 176);
+}
+
+template<size_t MEMORY, size_t ITER, size_t VERSION>
+void cn_slow_hash<MEMORY,ITER,VERSION>::explode_scratchpad_3()
+{
+	for (uint64_t i = 0; i < MEMORY / 512; i++)
+	{
+		generate_512(i, spad.as_uqword(), lpad.as_byte() + i*512);
+	}
+}
+
 #ifdef BUILD32
 inline uint64_t _umul128(uint64_t multiplier, uint64_t multiplicand, uint64_t* product_hi)
 {
@@ -511,6 +540,11 @@ void cn_slow_hash<MEMORY,ITER,VERSION>::software_hash(const void* in, size_t len
 		{
 			int64_t n  = idx.as_qword(0);
 			int32_t d  = idx.as_dword(2);
+
+#if defined(__arm__)
+			asm volatile ("nop"); //Fix for RasPi3 ARM - maybe needed on armv8 
+#endif
+
 			int64_t q = n / (d | 5);
 			idx.as_qword(0) = n ^ q;
 			idx = scratchpad_ptr(d ^ q);
@@ -536,6 +570,11 @@ void cn_slow_hash<MEMORY,ITER,VERSION>::software_hash(const void* in, size_t len
 		{
 			int64_t n  = idx.as_qword(0); // read bytes 0 - 7
 			int32_t d  = idx.as_dword(2); // read bytes 8 - 11
+
+#if defined(__arm__) || defined(__aarch64__)
+			asm volatile ("nop"); //Fix for RasPi3 ARM - maybe needed on armv8 
+#endif
+
 			int64_t q = n / (d | 5);
 			idx.as_qword(0) = n ^ q;
 			idx = scratchpad_ptr(d ^ q);
@@ -563,7 +602,8 @@ void cn_slow_hash<MEMORY,ITER,VERSION>::software_hash(const void* in, size_t len
 	}
 }
 
-template class cn_slow_hash<2*1024*1024, 0x80000, 0>;
-template class cn_slow_hash<4*1024*1024, 0x40000, 1>;
+template class cn_v1_hash_t;
+template class cn_v2_hash_t;
+template class cn_v3_hash_t;
 
 } //cn_heavy namespace

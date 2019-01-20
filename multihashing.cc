@@ -471,6 +471,36 @@ NAN_METHOD(cryptonight_heavy) {
     info.GetReturnValue().Set(returnValue);
 }
 
+NAN_METHOD(cryptonight_gpu) {
+
+    if (info.Length() != 1)
+        return THROW_ERROR_EXCEPTION("You must provide one argument.");
+
+    Local<Object> target = info[0]->ToObject();
+
+    if(!Buffer::HasInstance(target))
+        return THROW_ERROR_EXCEPTION("Argument should be a buffer object.");
+
+    char* input = Buffer::Data(target);
+    char output[32];
+    
+    uint32_t input_len = Buffer::Length(target);
+
+    if(input_len == 0 || input[0] > 0x05)
+    {
+        cn_heavy::cn_pow_hash_v3 ctx;
+        ctx.hash(input, input_len, output);
+    }
+    else
+    { 
+        cn_heavy::cn_pow_hash_v2 ctx;
+        ctx.hash(input, input_len, output);
+    }
+
+    v8::Local<v8::Value> returnValue = Nan::CopyBuffer(output, 32).ToLocalChecked();
+    info.GetReturnValue().Set(returnValue);
+}
+
 NAN_METHOD(x13) {
 
     if (info.Length() < 1)
@@ -640,6 +670,7 @@ NAN_MODULE_INIT(init) {
     Nan::Set(target, Nan::New("shavite3").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(shavite3)).ToLocalChecked());
     Nan::Set(target, Nan::New("cryptonight").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(cryptonight)).ToLocalChecked());
     Nan::Set(target, Nan::New("cryptonight_heavy").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(cryptonight_heavy)).ToLocalChecked());
+    Nan::Set(target, Nan::New("cryptonight_gpu").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(cryptonight_gpu)).ToLocalChecked());
     Nan::Set(target, Nan::New("x13").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(x13)).ToLocalChecked());
     Nan::Set(target, Nan::New("boolberry").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(boolberry)).ToLocalChecked());
     Nan::Set(target, Nan::New("nist5").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(nist5)).ToLocalChecked());

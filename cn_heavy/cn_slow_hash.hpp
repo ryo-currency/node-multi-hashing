@@ -1,4 +1,4 @@
-// Copyright (c) 2017, SUMOKOIN
+// Copyright (c) 2019, Ryo Currency Project
 //
 // All rights reserved.
 //
@@ -26,6 +26,7 @@
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
+// Parts of this file are originally copyright (c) 2014-2017, SUMOKOIN
 // Parts of this file are originally copyright (c) 2014-2017, The Monero Project
 // Parts of this file are originally copyright (c) 2012-2013, The Cryptonote developers
 
@@ -36,27 +37,23 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
-
-#if defined(_WIN32) || defined(_WIN64)
-#include <malloc.h>
-#include <intrin.h>
-#define HAS_WIN_INTRIN_API
-#endif
-
-// Note HAS_INTEL_HW and future HAS_ARM_HW only mean we can emit the AES instructions
-// check CPU support for the hardware AES encryption has to be done at runtime
-#if defined(__x86_64__) || defined(__i386__) || defined(_M_X86) || defined(_M_X64)
-#ifdef __GNUC__
-#include <x86intrin.h>
-#pragma GCC target ("aes")
-#if !defined(HAS_WIN_INTRIN_API)
-#include <cpuid.h>
-#endif // !defined(HAS_WIN_INTRIN_API)
-#endif // __GNUC__
-#define HAS_INTEL_HW
-#endif
+#include "hw_detect.hpp"
 
 namespace cn_heavy {
+
+// Macros are for template instantiations
+// Cryptonight
+#define cn_v1_hash_t cn_slow_hash<2*1024*1024, 0x80000, 0>
+// Cryptonight-heavy
+#define cn_v2_hash_t cn_slow_hash<4*1024*1024, 0x40000, 1>
+// Cryptonight-GPU
+#define cn_v3_hash_t cn_slow_hash<2*1024*1024, 0x10000, 2>
+
+// Use the types below 
+template<size_t MEMORY, size_t ITER, size_t VERSION> class cn_slow_hash;
+using cn_pow_hash_v1 = cn_v1_hash_t;
+using cn_pow_hash_v2 = cn_v2_hash_t;
+using cn_pow_hash_v3 = cn_v3_hash_t;
 
 #ifdef HAS_INTEL_HW
 inline void cpuid(uint32_t eax, int32_t ecx, int32_t val[4])
@@ -79,12 +76,19 @@ inline bool hw_check_aes()
 	cpuid(1, 0, cpu_info);
 	return (cpu_info[2] & (1 << 25)) != 0;
 }
+
+inline bool check_avx2()
+{
+	int32_t cpu_info[4];
+	cpuid(7, 0, cpu_info);
+	return (cpu_info[1] & (1 << 5)) != 0;
+}
 #endif
 
 #ifdef HAS_ARM_HW
 inline bool hw_check_aes()
 {
-	return false;
+	return (getauxval(AT_HWCAP) & HWCAP_AES) != 0;
 }
 #endif
 
@@ -124,6 +128,7 @@ public:
 	inline const uint32_t& as_udword(size_t i) const { return *(reinterpret_cast<uint32_t*>(base_ptr)+i); }
 #ifdef HAS_INTEL_HW
 	inline __m128i* as_xmm() { return reinterpret_cast<__m128i*>(base_ptr); }
+	inline __m256i* as_xmm256() { return reinterpret_cast<__m256i*>(base_ptr); }
 #endif
 private:
 	void* base_ptr;
@@ -133,7 +138,7 @@ template<size_t MEMORY, size_t ITER, size_t VERSION>
 class cn_slow_hash
 {
 public:
-	cn_slow_hash()
+	cn_slow_hash() : borrowed_pad(false)
 	{
 #if !defined(HAS_WIN_INTRIN_API)
 		lpad.set(aligned_alloc(4096, MEMORY));
@@ -144,12 +149,19 @@ public:
 #endif
 	}
 
-	cn_slow_hash (cn_slow_hash&& other) noexcept : lpad(other.lpad.as_byte()), spad(other.spad.as_byte()) 
+	cn_slow_hash (cn_slow_hash&& other) noexcept : lpad(other.lpad.as_byte()), spad(other.spad.as_byte()), borrowed_pad(other.borrowed_pad)
 	{
 		other.lpad.set(nullptr);
 		other.spad.set(nullptr);
 	}
-	
+
+	// Factory function enabling to temporaliy turn v2 object into v1
+	// It is caller's responsibility to ensure that v2 object is not hashing at the same time!!
+	static cn_pow_hash_v1 make_borrowed(cn_pow_hash_v2& t)
+	{
+		return cn_pow_hash_v1(t.lpad.as_void(), t.spad.as_void());
+	}
+
 	cn_slow_hash& operator= (cn_slow_hash&& other) noexcept
     {
 		if(this == &other)
@@ -158,6 +170,7 @@ public:
 		free_mem();
 		lpad.set(other.lpad.as_void());
 		spad.set(other.spad.as_void());
+		borrowed_pad = other.borrowed_pad;
 		return *this;
 	}
 
@@ -172,22 +185,47 @@ public:
 
 	void hash(const void* in, size_t len, void* out)
 	{
-		if(hw_check_aes() && !check_override())
-			hardware_hash(in, len, out);
+		if(VERSION <= 1)
+		{
+			if(hw_check_aes() && !check_override())
+				hardware_hash(in, len, out);
+			else
+				software_hash(in, len, out);
+		}
 		else
-			software_hash(in, len, out);
+		{
+			if(hw_check_aes() && !check_override())
+				hardware_hash_3(in, len, out);
+			else
+				software_hash_3(in, len, out);
+		}
 	}
 
 	void software_hash(const void* in, size_t len, void* out);
-	
+	void software_hash_3(const void* in, size_t len, void* pout);
+
 #if !defined(HAS_INTEL_HW) && !defined(HAS_ARM_HW)
 	inline void hardware_hash(const void* in, size_t len, void* out) { assert(false); }
+	inline void hardware_hash_3(const void* in, size_t len, void* out) { assert(false); }
 #else
 	void hardware_hash(const void* in, size_t len, void* out);
+	void hardware_hash_3(const void* in, size_t len, void* pout);
 #endif
 
 private:
-	static constexpr size_t MASK = ((MEMORY-1) >> 4) << 4;
+	static constexpr size_t MASK = VERSION <= 1 ? ((MEMORY-1) >> 4) << 4 : ((MEMORY-1) >> 6) << 6;
+
+	friend cn_pow_hash_v1;
+	friend cn_pow_hash_v2;
+	friend cn_pow_hash_v3;
+
+	// Constructor enabling v1 hash to borrow v2's buffer
+	cn_slow_hash(void* lptr, void* sptr)
+	{
+		lpad.set(lptr);
+		spad.set(sptr);
+		borrowed_pad = true;
+	}
 
 	inline bool check_override()
 	{
@@ -202,25 +240,30 @@ private:
 			return true;
 		}
 	}
-	
+
 	inline void free_mem()
 	{
+		if(!borrowed_pad)
+		{
 #if !defined(HAS_WIN_INTRIN_API)
-		if(lpad.as_void() != nullptr)
-			free(lpad.as_void());
-		if(lpad.as_void() != nullptr)
-			free(spad.as_void());
+			if(lpad.as_void() != nullptr)
+				free(lpad.as_void());
+			if(lpad.as_void() != nullptr)
+				free(spad.as_void());
 #else
-		if(lpad.as_void() != nullptr)
-			_aligned_free(lpad.as_void());
-		if(lpad.as_void() != nullptr)
-			_aligned_free(spad.as_void());
+			if(lpad.as_void() != nullptr)
+				_aligned_free(lpad.as_void());
+			if(lpad.as_void() != nullptr)
+				_aligned_free(spad.as_void());
 #endif
+		}
+
 		lpad.set(nullptr);
 		spad.set(nullptr);
 	}
 
 	inline cn_sptr scratchpad_ptr(uint32_t idx) { return lpad.as_byte() + (idx & MASK); }
+	inline cn_sptr scratchpad_ptr(uint32_t idx, size_t n) { return lpad.as_byte() + (idx & MASK) + n*16; }
 
 #if !defined(HAS_INTEL_HW) && !defined(HAS_ARM_HW)
 	inline void explode_scratchpad_hard() { assert(false); }
@@ -230,18 +273,19 @@ private:
 	void implode_scratchpad_hard();
 #endif
 
+	void explode_scratchpad_3();
 	void explode_scratchpad_soft();
 	void implode_scratchpad_soft();
 
+	void inner_hash_3();
+	void inner_hash_3_avx();
+
 	cn_sptr lpad;
 	cn_sptr spad;
+	bool borrowed_pad;
 };
 
-using cn_pow_hash_v1 = cn_slow_hash<2*1024*1024, 0x80000, 0>;
-using cn_pow_hash_v2 = cn_slow_hash<4*1024*1024, 0x40000, 1>;
-
-extern template class cn_slow_hash<2*1024*1024, 0x80000, 0>;
-extern template class cn_slow_hash<4*1024*1024, 0x40000, 1>;
-
+extern template class cn_v1_hash_t;
+extern template class cn_v2_hash_t;
+extern template class cn_v3_hash_t;
 } //cn_heavy namespace
-

@@ -51,6 +51,7 @@
                 "crypto/aesb.c",
                 "crypto/wild_keccak.cpp",
                 "cn_heavy/cn_slow_hash_hard_intel.cpp",
+                "cn_heavy/cn_slow_hash_hard_avx2.cpp",
                 "cn_heavy/cn_slow_hash_soft.cpp",
             ],
             "include_dirs": [
